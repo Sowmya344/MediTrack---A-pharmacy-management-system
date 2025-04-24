@@ -17,6 +17,166 @@ def get_connection():
 
 conn = get_connection()
 
+# Create tables if they don't exist
+def create_tables():
+    c = conn.cursor()
+    
+    # Create PaymentMethods table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS PaymentMethods (
+            PaymentMethodID INTEGER PRIMARY KEY AUTOINCREMENT,
+            MethodName TEXT NOT NULL,
+            Description TEXT
+        )
+    """)
+    
+    # Create PharmacyPayments table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS PharmacyPayments (
+            PharmacyPaymentID INTEGER PRIMARY KEY AUTOINCREMENT,
+            PharmacyID INTEGER,
+            PaymentMethodID INTEGER,
+            AccountDetails TEXT,
+            IsDefault BOOLEAN,
+            FOREIGN KEY (PaymentMethodID) REFERENCES PaymentMethods(PaymentMethodID),
+            FOREIGN KEY (PharmacyID) REFERENCES RetailPharmacies(PharmacyID)
+        )
+    """)
+    
+    # Create Payments table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS Payments (
+            PaymentID INTEGER PRIMARY KEY AUTOINCREMENT,
+            PharmacyID INTEGER,
+            SupplierID INTEGER,
+            Amount REAL,
+            PaymentMethodID INTEGER,
+            Status TEXT,
+            Notes TEXT,
+            TransactionReference TEXT,
+            PaymentDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (PharmacyID) REFERENCES RetailPharmacies(PharmacyID),
+            FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID),
+            FOREIGN KEY (PaymentMethodID) REFERENCES PaymentMethods(PaymentMethodID)
+        )
+    """)
+    
+    # Create RestockOrders table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS RestockOrders (
+            RestockID INTEGER PRIMARY KEY AUTOINCREMENT,
+            SupplierID INTEGER,
+            DrugID INTEGER,
+            Quantity INTEGER,
+            Status TEXT,
+            PaymentStatus TEXT,
+            FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID),
+            FOREIGN KEY (DrugID) REFERENCES Drugs(D_id)
+        )
+    """)
+    
+    # Create SupplierNotifications table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS SupplierNotifications (
+            NotificationID INTEGER PRIMARY KEY AUTOINCREMENT,
+            SupplierID INTEGER,
+            Title TEXT,
+            Message TEXT,
+            RelatedEntityType TEXT,
+            RelatedEntityID INTEGER,
+            IsRead BOOLEAN DEFAULT 0,
+            CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID)
+        )
+    """)
+    
+    # Create Drugs table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS Drugs (
+            D_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            D_Name TEXT NOT NULL,
+            D_Price REAL,
+            D_IsDiscontinued BOOLEAN,
+            D_Manufacturer TEXT,
+            D_Type TEXT,
+            D_PackSize TEXT,
+            D_ShortComp1 TEXT,
+            D_ShortComp2 TEXT,
+            D_SaltComposition TEXT,
+            D_Description TEXT,
+            D_SideEffects TEXT,
+            D_DrugInteractions TEXT,
+            stock_no INTEGER
+        )
+    """)
+    
+    # Create Customers table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS Customers (
+            C_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            C_Name TEXT NOT NULL,
+            C_Password TEXT NOT NULL,
+            C_Email TEXT UNIQUE,
+            C_State TEXT,
+            C_Number TEXT
+        )
+    """)
+    
+    # Create Orders table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS Orders (
+            O_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            O_Name TEXT,
+            O_Items TEXT,
+            O_Qty INTEGER,
+            O_Date TIMESTAMP
+        )
+    """)
+    
+    # Create Tickets table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS Tickets (
+            TicketID INTEGER PRIMARY KEY AUTOINCREMENT,
+            RestockID INTEGER,
+            SupplierID INTEGER,
+            Status TEXT,
+            FOREIGN KEY (RestockID) REFERENCES RestockOrders(RestockID),
+            FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID)
+        )
+    """)
+    
+    # Create Suppliers table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS Suppliers (
+            SupplierID INTEGER PRIMARY KEY AUTOINCREMENT,
+            SupplierName TEXT NOT NULL,
+            ContactEmail TEXT UNIQUE,
+            ContactNumber TEXT,
+            Address TEXT,
+            SupplierPassword TEXT
+        )
+    """)
+    
+    # Create RetailPharmacies table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS RetailPharmacies (
+            PharmacyID INTEGER PRIMARY KEY AUTOINCREMENT,
+            PharmacyName TEXT NOT NULL,
+            PharmacyEmail TEXT UNIQUE,
+            PharmacyPassword TEXT,
+            Address TEXT,
+            PhoneNumber TEXT,
+            BillingAddress TEXT,
+            TaxID TEXT,
+            SupplierID INTEGER,
+            FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID)
+        )
+    """)
+    
+    conn.commit()
+
+create_tables()
+
 # Initialize PaymentMethods table with sample data if not already present
 def initialize_payment_methods():
     c = conn.cursor()
